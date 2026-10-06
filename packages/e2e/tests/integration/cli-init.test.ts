@@ -107,6 +107,25 @@ describe('initializing standalone projects', () => {
     expect(collection.tests.map((test) => test.title)).toEqual(['app responds']);
   });
 
+  it('loads the Cloudflare scaffold and collects its example without credentials', async () => {
+    for (const name of ['CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_AI_GATEWAY_ID', 'CLOUDFLARE_API_TOKEN']) vi.stubEnv(name, undefined);
+    const scaffold = createScaffold('web', { gateway: 'cloudflare' });
+    writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ type: 'module', devDependencies: scaffold.dependencies }));
+    writeFileSync(path.join(dir, 'e2e.config.ts'), scaffold.config);
+    mkdirSync(path.join(dir, 'tests'));
+    writeFileSync(path.join(dir, 'tests/example.e2e.ts'), scaffold.example);
+    linkPackages('e2e', 'web');
+    linkModules('ai', '@ai-sdk/openai-compatible');
+
+    const raw = await loadConfigModule(path.join(dir, 'e2e.config.ts'));
+    const config = resolveConfig(raw, { projectRoot: dir, env: {} });
+    const collection = await collect(config);
+
+    expect(config.agent.model).toMatchObject({ provider: 'cloudflare.chat', id: 'openai/gpt-4.1' });
+    expect(scaffold.dependencies).toMatchObject({ ai: '^7.0.0', '@ai-sdk/openai-compatible': '^3.0.0' });
+    expect(collection.tests.map((test) => test.title)).toEqual(['app opens']);
+  });
+
   it.each([
     { host: 'darwin', platform: 'ios' },
     { host: 'linux', platform: 'android' },

@@ -57,8 +57,17 @@ key, or a local endpoint. Authenticate:
 | OpenCode Console (OpenCode Zen and OpenCode Go) | `npx e2e login opencode-console` (approve the device code, pick the workspace) |
 | SuperGrok or X Premium+ | `npx e2e login spacexai` |
 | Vercel AI Gateway | Set `AI_GATEWAY_API_KEY`, or sign in to the Vercel CLI and `npx vercel link`; without the key `gateway()` uses a Vercel OIDC token |
+| Cloudflare AI Gateway | Set `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` with Account > Workers AI > Read permission, and `CLOUDFLARE_AI_GATEWAY_ID`, which defaults to `default` |
 | OpenRouter | Set `OPENROUTER_API_KEY` |
 | Local or self-hosted endpoint | Set the endpoint URL and a model it serves, plus a key if required |
+
+Switching to Cloudflare: install `ai` and `@ai-sdk/openai-compatible`, then
+follow the Cloudflare recipe in the Models guide. The config uses Cloudflare's
+REST Chat Completions endpoint and a model such as `openai/gpt-4.1`. Cloudflare
+uses the stored provider key's `default` alias or Unified Billing when gateway
+policy allows it, with no local provider key or e2e billing setting. Named
+BYOK aliases require a different provider-passthrough route. Export the
+variables before loading the config; e2e does not load `.env` files.
 
 Switching an existing config to ChatGPT: install `ai` and `@ai-sdk/openai`,
 set `model: chatgpt('gpt-6-luna')` from `e2e/oauth/chatgpt`, run `npx e2e

@@ -31,6 +31,24 @@ export const ModelProvider = ({ show }) => {
       docs: 'https://ai-sdk.dev/providers/ai-sdk-providers/ai-gateway',
     },
     {
+      id: 'cloudflare',
+      name: 'Cloudflare AI Gateway',
+      group: 'OpenAI-compatible',
+      packages: ['@ai-sdk/openai-compatible'],
+      code: `import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+
+const cloudflare = createOpenAICompatible({
+  name: 'cloudflare',
+  baseURL: \`https://api.cloudflare.com/client/v4/accounts/\${process.env.CLOUDFLARE_ACCOUNT_ID}/ai/v1\`,
+  apiKey: process.env.CLOUDFLARE_API_TOKEN ?? '',
+  headers: { 'cf-aig-gateway-id': process.env.CLOUDFLARE_AI_GATEWAY_ID ?? 'default' },
+});`,
+      model: "cloudflare.chatModel('openai/gpt-4.1')",
+      env: ['CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_AI_GATEWAY_ID'],
+      note: 'The token needs Account > Workers AI > Read. Set your existing gateway ID; when unset, the config uses default. Cloudflare manages stored default provider keys or Unified Billing.',
+      docs: 'https://developers.cloudflare.com/ai-gateway/usage/rest-api/',
+    },
+    {
       id: 'openai',
       name: 'OpenAI',
       group: 'AI SDK',
