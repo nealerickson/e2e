@@ -246,6 +246,7 @@ describe('e2e init', () => {
       initialValue: 'vercel',
       options: [
         expect.objectContaining({ value: 'vercel', label: 'Vercel AI Gateway' }),
+        expect.objectContaining({ value: 'cloudflare', label: 'Cloudflare AI Gateway' }),
         expect.objectContaining({ value: 'openrouter' }),
         expect.objectContaining({ value: 'openai-compatible' }),
         expect.objectContaining({ value: 'chatgpt' }),
@@ -263,6 +264,32 @@ describe('e2e init', () => {
     expect(read('e2e.config.ts')).toContain('// The endpoint serves the model id over the OpenAI chat API; pass apiKey when it needs one.');
     expect(JSON.parse(read('package.json')).devDependencies).toHaveProperty('ai', '^7.0.0');
     expect(JSON.parse(read('package.json')).devDependencies).toHaveProperty('@ai-sdk/openai-compatible', '^3.0.0');
+  });
+
+  it.each(['web', 'mobile', 'none'])('writes a Cloudflare model for the %s engine without embedding credentials', async (engine) => {
+    vi.stubEnv('CLOUDFLARE_ACCOUNT_ID', 'account-from-environment');
+    vi.stubEnv('CLOUDFLARE_AI_GATEWAY_ID', 'gateway-from-environment');
+    vi.stubEnv('CLOUDFLARE_API_TOKEN', 'token-from-environment');
+    vi.mocked(clack.select).mockResolvedValueOnce(engine).mockResolvedValueOnce('cloudflare');
+    vi.mocked(clack.confirm).mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+
+    expect((await init(dir)).exitCode).toBe(0);
+    expect(clack.select).toHaveBeenCalledTimes(2);
+    expect(clack.text).not.toHaveBeenCalled();
+    const config = read('e2e.config.ts');
+    expect(config).toContain("import { createOpenAICompatible } from '@ai-sdk/openai-compatible';");
+    expect(config).toContain("name: 'cloudflare'");
+    expect(config).toContain(".chatModel('openai/gpt-4.1')");
+    for (const name of ['CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_AI_GATEWAY_ID', 'CLOUDFLARE_API_TOKEN']) {
+      expect(config).toContain(`process.env.${name}`);
+      expect(config).not.toContain(process.env[name]);
+    }
+    const dependencies = JSON.parse(read('package.json')).devDependencies;
+    expect(dependencies).toHaveProperty('@ai-sdk/openai-compatible', '^3.0.0');
+    expect(dependencies).toHaveProperty('ai', '^7.0.0');
+    if (engine === 'none') expect(config).not.toContain('@e2e-dev/');
+    else expect(config).toContain(`from '@e2e-dev/${engine}'`);
+    expect(output()).not.toContain('e2e login');
   });
 
   it.each([

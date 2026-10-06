@@ -59,6 +59,63 @@ export default {
 } satisfies E2EConfig;
 ```
   </Tab>
+  <Tab title="Cloudflare AI Gateway">
+
+Choose **Cloudflare AI Gateway** in `e2e init`, or install the compatible
+provider in an existing project:
+
+<CodeGroup>
+```bash npm
+npm install -D ai @ai-sdk/openai-compatible
+```
+
+```bash pnpm
+pnpm add -D ai @ai-sdk/openai-compatible
+```
+
+```bash bun
+bun add -d ai @ai-sdk/openai-compatible
+```
+</CodeGroup>
+
+Export these variables in your shell or CI:
+
+- `CLOUDFLARE_ACCOUNT_ID`: the account that owns your gateway.
+- `CLOUDFLARE_API_TOKEN`: a Cloudflare token with **Account > Workers AI > Read**
+  permission for that account. An AI Gateway-only token cannot call this endpoint.
+- `CLOUDFLARE_AI_GATEWAY_ID`: your existing gateway ID. The config uses the
+  `default` gateway when this variable is unset.
+
+```ts title="e2e.config.ts"
+import type { E2EConfig } from 'e2e';
+import { web } from '@e2e-dev/web';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+
+const cloudflare = createOpenAICompatible({
+  name: 'cloudflare',
+  baseURL: `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/ai/v1`,
+  apiKey: process.env.CLOUDFLARE_API_TOKEN ?? '',
+  headers: { 'cf-aig-gateway-id': process.env.CLOUDFLARE_AI_GATEWAY_ID ?? 'default' },
+});
+
+export default {
+  targets: [{ engine: web(), app: { url: 'http://localhost:3000' } }],
+  agents: { default: { model: cloudflare.chatModel('openai/gpt-4.1') } },
+} satisfies E2EConfig;
+```
+
+This uses Cloudflare's [REST Chat Completions endpoint](https://developers.cloudflare.com/ai-gateway/usage/rest-api/).
+Choose a model from its [catalog](https://developers.cloudflare.com/ai/models/)
+that supports tool calls and images. e2e does not load `.env` files; export
+the variables or load them in your [config](/reference/config#loading).
+
+Cloudflare manages provider credentials and billing. The same e2e config
+works with a stored provider key under its `default` alias or with Unified
+Billing when gateway policy permits it. You do not need a local provider key
+or an e2e billing setting. A stored default key takes precedence over Unified
+Billing. Named BYOK aliases require Cloudflare's provider-passthrough route,
+which this recipe does not use. See [credential precedence](https://developers.cloudflare.com/ai-gateway/features/unified-billing/#credential-precedence).
+  </Tab>
   <Tab title="OpenRouter">
 
 Install `@openrouter/ai-sdk-provider` and set `OPENROUTER_API_KEY`.

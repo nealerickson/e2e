@@ -5,7 +5,7 @@
  * entry here.
  */
 
-export type GatewayId = 'vercel' | 'openrouter' | 'openai-compatible' | 'chatgpt' | 'copilot' | 'opencode-console' | 'grok';
+export type GatewayId = 'vercel' | 'cloudflare' | 'openrouter' | 'openai-compatible' | 'chatgpt' | 'copilot' | 'opencode-console' | 'grok';
 
 export interface GatewayPreset {
   readonly id: GatewayId;
@@ -31,6 +31,21 @@ export const GATEWAYS: readonly GatewayPreset[] = [
     import: "import { gateway } from 'ai';",
     comment: 'The Vercel AI Gateway serves the model id and reads AI_GATEWAY_API_KEY, or the OIDC token of a linked Vercel project.',
     model: () => "gateway('openai/gpt-6-luna-fast')",
+  },
+  {
+    id: 'cloudflare',
+    label: 'Cloudflare AI Gateway',
+    hint: 'your Cloudflare gateway; reads CLOUDFLARE_API_TOKEN',
+    dependencies: { '@ai-sdk/openai-compatible': '^3.0.0' },
+    import: "import { createOpenAICompatible } from '@ai-sdk/openai-compatible';",
+    comment: 'Cloudflare reads CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN (Workers AI Read), and CLOUDFLARE_AI_GATEWAY_ID (default: default).',
+    model: () =>
+      `createOpenAICompatible({
+        name: 'cloudflare',
+        baseURL: \`https://api.cloudflare.com/client/v4/accounts/\${process.env.CLOUDFLARE_ACCOUNT_ID}/ai/v1\`,
+        apiKey: process.env.CLOUDFLARE_API_TOKEN ?? '',
+        headers: { 'cf-aig-gateway-id': process.env.CLOUDFLARE_AI_GATEWAY_ID ?? 'default' },
+      }).chatModel('openai/gpt-4.1')`,
   },
   {
     id: 'openrouter',
